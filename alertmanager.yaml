@@ -17,11 +17,11 @@ data:
     receivers:
       - name: slack-notifications
         slack_configs:
-          - api_url: 'https://hooks.slack.com/services/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'
+          - api_url: '${SLACK_API_URL}'
             channel: 'test-k8s'
-            send_resolved: true
             username: 'Prometheus Alert'
             icon_emoji: ':warning:'
+            send_resolved: true
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -40,6 +40,12 @@ spec:
     spec:
       containers:
         - name: alertmanager
+          env:
+            - name: SLACK_API_URL
+              valueFrom:
+                secretKeyRef:
+                  name: slack-webhook-secret
+                  key: SLACK_API_URL
           image: prom/alertmanager
           args:
             - "--config.file=/etc/alertmanager/alertmanager.yml"
