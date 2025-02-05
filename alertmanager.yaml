@@ -23,6 +23,31 @@ data:
             icon_emoji: ':warning:'
             send_resolved: true
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: monitoring
+data:
+  alertmanager.yml: |
+    global:
+      resolve_timeout: 5m
+
+    route:
+      receiver: slack-notifications
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 1h
+
+    receivers:
+      - name: slack-notifications
+        slack_configs:
+          - api_url: '${SLACK_API_URL}'
+            channel: 'test-k8s'
+            username: 'Prometheus Alert'
+            icon_emoji: ':warning:'
+            send_resolved: true
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -39,12 +64,13 @@ spec:
         app: alertmanager
     spec:
       initContainers:
-        - name: config-init
+        - name: init-config
           image: busybox
           command:
-            - /bin/sh
+            - sh
             - -c
-            - "echo api_url: $SLACK_API_URL > /etc/alertmanager/alertmanager.yml"
+            - |
+              envsubst < /etc/alertmanager/alertmanager.yml.template > /etc/alertmanager/alertmanager.yml
           env:
             - name: SLACK_API_URL
               valueFrom:
@@ -54,6 +80,7 @@ spec:
           volumeMounts:
             - name: alertmanager-config
               mountPath: /etc/alertmanager
+              subPath: alertmanager.yml.template
       containers:
         - name: alertmanager
           image: prom/alertmanager
@@ -68,6 +95,7 @@ spec:
         - name: alertmanager-config
           configMap:
             name: alertmanager-config
+
 ---
 apiVersion: v1
 kind: Service
