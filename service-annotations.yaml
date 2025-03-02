@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tasker-app
+  namespace: tasker
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/actuator/prometheus"
+    prometheus.io/port: "8080"
+  labels:
+    app.kubernetes.io/instance: tasker-app
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: tasker-app
+    app.kubernetes.io/version: 1.0.0
+    helm.sh/chart: tasker-app-0.1.0
+spec:
+  ports:
+    - name: http
+      port: 8080
+      protocol: TCP
+      targetPort: http
+  selector:
+    app.kubernetes.io/instance: tasker-app
+    app.kubernetes.io/name: tasker-app
+  type: ClusterIP
